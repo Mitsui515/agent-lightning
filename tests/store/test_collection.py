@@ -28,8 +28,7 @@ from pydantic import BaseModel
 
 import agentlightning.store.collection.memory as memory_module
 from agentlightning.store.collection import DequeBasedQueue, DictBasedKeyValue, KeyValue, ListBasedCollection
-from agentlightning.store.collection.base import Collection
-from agentlightning.store.collection.memory import _item_matches_filters  # pyright: ignore[reportPrivateUsage]
+from agentlightning.store.collection.base import Collection, item_matches_filters
 from agentlightning.store.collection.memory import _LoopAwareAsyncLock  # pyright: ignore[reportPrivateUsage]
 from agentlightning.store.collection.memory import _ThreadSafeAsyncLock  # pyright: ignore[reportPrivateUsage]
 from agentlightning.types import Rollout
@@ -478,7 +477,7 @@ async def test_list_collection_must_filters_limit_tree_scan_even_with_or(
     if not isinstance(sample_collection, ListBasedCollection):
         pytest.skip("This test is only valid for pure-memory collections")
     seen: List[Tuple[str, int]] = []
-    original = _item_matches_filters
+    original = item_matches_filters
 
     def tracking(
         item: SampleItem,
@@ -489,7 +488,7 @@ async def test_list_collection_must_filters_limit_tree_scan_even_with_or(
         seen.append((item.partition, item.index))
         return original(item, filters, filter_logic, must_filters)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(memory_module, "_item_matches_filters", tracking)
+    monkeypatch.setattr(memory_module, "item_matches_filters", tracking)
 
     filters = {
         "_aggregate": "or",
@@ -509,7 +508,7 @@ async def test_list_collection_primary_key_prefix_limits_filter_checks(
 ) -> None:
     collection = _build_collection(sample_items)
     seen: List[Tuple[str, int]] = []
-    original = _item_matches_filters
+    original = item_matches_filters
 
     def tracking(
         item: SampleItem,
@@ -520,7 +519,7 @@ async def test_list_collection_primary_key_prefix_limits_filter_checks(
         seen.append((item.partition, item.index))
         return original(item, filters, filter_logic, must_filters)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(memory_module, "_item_matches_filters", tracking)
+    monkeypatch.setattr(memory_module, "item_matches_filters", tracking)
 
     filters = {"partition": {"exact": "alpha"}, "index": {"within": {1, 2}}}
     result = await collection.query(filter=filters)  # type: ignore[arg-type]

@@ -16,3 +16,10 @@ __all__ = [
     "CollectionBasedLightningStore",
     "LightningStoreThreaded",
 ]
+
+
+def _lazy_sqlite() -> type:
+    """Lazily import SQLiteLightningStore to avoid ImportError when aiosqlite is not installed."""
+    from .sqlite import SQLiteLightningStore
+
+    return SQLiteLightningStore
