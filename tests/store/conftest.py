@@ -62,6 +62,32 @@ def inmemory_debounced_store(fake_time: _FakeTime) -> InMemoryLightningStore:
 
 
 @pytest_asyncio.fixture
+async def sqlite_store():
+    """Fixture for SQLite store implementation (in-memory)."""
+    from agentlightning.store.sqlite import SQLiteLightningStore
+
+    store = SQLiteLightningStore(db_path=":memory:", scan_debounce_seconds=0)
+    await store.initialize()
+    try:
+        yield store
+    finally:
+        await store.close()
+
+
+@pytest_asyncio.fixture
+async def sqlite_debounced_store(fake_time: _FakeTime):
+    """Fixture for SQLite store implementation with scan debouncing (in-memory)."""
+    from agentlightning.store.sqlite import SQLiteLightningStore
+
+    store = SQLiteLightningStore(db_path=":memory:", scan_debounce_seconds=5.0)
+    await store.initialize()
+    try:
+        yield store
+    finally:
+        await store.close()
+
+
+@pytest_asyncio.fixture
 async def mongo_store(temporary_mongo_database: AsyncDatabase[Any]):
     """Fixture for MongoDB store implementation."""
     from agentlightning.store.mongo import MongoLightningStore
@@ -98,6 +124,7 @@ async def mongo_debounced_store(fake_time: _FakeTime, temporary_mongo_database: 
 @pytest.fixture(
     params=[
         "inmemory_store",
+        "sqlite_store",
         pytest.param("mongo_store", marks=pytest.mark.mongo),
     ]
 )
@@ -109,6 +136,7 @@ def store_fixture(request: FixtureRequest) -> AsyncGenerator[LightningStore, Non
 @pytest.fixture(
     params=[
         "inmemory_debounced_store",
+        "sqlite_debounced_store",
         pytest.param("mongo_debounced_store", marks=pytest.mark.mongo),
     ]
 )

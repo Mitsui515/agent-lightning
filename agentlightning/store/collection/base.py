@@ -585,3 +585,100 @@ def resolve_sort_options(sort: Optional[SortOptions]) -> Tuple[Optional[str], Li
         raise ValueError(f"Unsupported sort order '{sort_order}'")
 
     return sort_name, sort_order
+
+
+def item_matches_filters(
+    item: object,
+    filters: Optional[FilterMap],
+    filter_logic: Literal["and", "or"],
+    must_filters: Optional[FilterMap] = None,
+) -> bool:
+    """Check whether an item matches the provided filter definition.
+
+    Filter format::
+
+        {
+            "_aggregate": "or",
+            "field_name": {
+                "exact": <value>,
+                "within": <iterable_of_allowed_values>,
+                "contains": <substring_or_element>,
+            },
+            ...
+        }
+
+    Operators within the same field are stored in a unified pool and combined
+    using a universal logical operator.
+    """
+    if must_filters and not item_matches_filters(item, must_filters, "and"):
+        return False
+
+    if not filters:
+        return True
+
+    all_conditions_match: List[bool] = []
+
+    for field_name, ops in filters.items():
+        item_value = getattr(item, field_name, None)
+
+        for op_name, expected in ops.items():
+            # Ignore no-op filters
+            if expected is None:
+                continue
+
+            if op_name == "exact":
+                all_conditions_match.append(item_value == expected)
+
+            elif op_name == "within":
+                try:
+                    all_conditions_match.append(item_value in expected)  # type: ignore[arg-type]
+                except TypeError:
+                    all_conditions_match.append(False)
+
+            elif op_name == "contains":
+                if item_value is None:
+                    all_conditions_match.append(False)
+                elif isinstance(item_value, str) and isinstance(expected, str):
+                    all_conditions_match.append(expected in item_value)
+                else:
+                    # Fallback: treat as generic iterable containment.
+                    try:
+                        all_conditions_match.append(expected in item_value)  # type: ignore[arg-type]
+                    except TypeError:
+                        all_conditions_match.append(False)
+            else:
+                raise ValueError(f"Unsupported filter operator '{op_name}' for field '{field_name}'")
+
+    return all(all_conditions_match) if filter_logic == "and" else any(all_conditions_match)
+
+
+def get_sort_value(item: object, sort_by: str) -> Any:
+    """Get a sort key for the given item/field.
+
+    - If the field name ends with ``_time``, values are treated as comparable timestamps.
+    - For other fields we try to infer a safe default from the Pydantic model annotation.
+    """
+    value = getattr(item, sort_by, None)
+
+    if sort_by.endswith("_time"):
+        # For *_time fields, push missing values to the end.
+        return float("inf") if value is None else value
+
+    if value is None:
+        # Introspect model field type to choose a reasonable default for None.
+        model_fields = getattr(item.__class__, "model_fields", {})
+        if sort_by not in model_fields:
+            raise ValueError(
+                f"Failed to sort items by '{sort_by}': field does not exist " f"on {item.__class__.__name__}"
+            )
+
+        field_type_str = str(model_fields[sort_by].annotation)
+        if "str" in field_type_str or "Literal" in field_type_str:
+            return ""
+        if "int" in field_type_str:
+            return 0
+        if "float" in field_type_str:
+            return 0.0
+        raise ValueError(f"Failed to sort items by '{sort_by}': unsupported field type {field_type_str!r}")
+
+    return value

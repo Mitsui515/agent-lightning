@@ -47,6 +47,10 @@ mongo = [
   "pymongo",
 ]
 
+sqlite = [
+  "aiosqlite>=0.19.0",
+]
+
 [project.scripts]
 agl = "agentlightning.cli:main"
 
@@ -70,6 +74,7 @@ dev = [
   "mkdocs-macros-plugin",
   "mkdocs-autorefs",
   "prometheus-client",
+  "aiosqlite>=0.19.0",
 ]
 experiment = [
   "random-word",
