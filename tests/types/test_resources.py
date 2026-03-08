@@ -96,7 +96,10 @@ class TestProxyLLM:
         proxy = self._make_proxy()
         with caplog.at_level(logging.WARNING, logger="agentlightning.types.resources"):
             _ = proxy.endpoint
-        assert any("endpoint" in msg for msg in caplog.messages)
+        expected_fragment = "Accessing 'endpoint' directly on ProxyLLM is discouraged"
+        assert any(expected_fragment in msg for msg in caplog.messages), (
+            f"Expected warning containing {expected_fragment!r}, got: {caplog.messages}"
+        )
 
     def test_with_attempted_rollout_returns_plain_llm(self) -> None:
         from agentlightning.types import AttemptedRollout, Attempt, Rollout

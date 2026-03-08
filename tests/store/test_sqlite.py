@@ -85,8 +85,10 @@ async def test_data_persists_across_reopen() -> None:
         await store2.initialize()
         try:
             all_rollouts = await store2.query_rollouts()
-            assert any(r.rollout_id == rollout_id for r in all_rollouts.items), (
-                f"Rollout {rollout_id!r} not found after reopening database"
+            found_ids = [r.rollout_id for r in all_rollouts.items]
+            assert rollout_id in found_ids, (
+                f"Rollout {rollout_id!r} not found after reopening database. "
+                f"Found: {found_ids}"
             )
             assert all_rollouts.items[0].status == "queuing"
         finally:

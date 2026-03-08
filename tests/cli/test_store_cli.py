@@ -49,7 +49,7 @@ class TestStoreCLIArgParsing:
             mock_server.run_forever = AsyncMock(side_effect=KeyboardInterrupt)
             mock_server_cls.return_value = mock_server
 
-            with pytest.raises((KeyboardInterrupt, RuntimeError, SystemExit, Exception)):
+            with pytest.raises((KeyboardInterrupt, RuntimeError)):
                 _run_main([])
 
     def test_backend_mongo_accepted(self) -> None:

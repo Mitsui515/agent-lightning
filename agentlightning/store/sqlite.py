@@ -19,6 +19,7 @@ Example usage::
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Dict, List, Optional, Sequence, Union
@@ -31,6 +32,11 @@ from .collection.sqlite import SQLiteLightningCollections
 from .collection_based import CollectionBasedLightningStore, healthcheck_before, tracked
 
 logger = logging.getLogger(__name__)
+
+# Polling constants for wait_for_rollouts.
+_MIN_SLEEP_SECONDS = 0.01
+_MAX_SLEEP_SECONDS = 10.0
+_DEADLINE_BUFFER_SECONDS = 0.1
 
 
 class SQLiteLightningStore(CollectionBasedLightningStore[SQLiteLightningCollections]):
@@ -101,8 +107,6 @@ class SQLiteLightningStore(CollectionBasedLightningStore[SQLiteLightningCollecti
             Finished rollouts in the same order as *rollout_ids* (missing
             rollouts are omitted from the result).
         """
-        import asyncio
-
         deadline = time.time() + timeout if timeout is not None else None
 
         finished: Dict[str, Rollout] = {}
@@ -127,7 +131,11 @@ class SQLiteLightningStore(CollectionBasedLightningStore[SQLiteLightningCollecti
             if deadline is not None and current_time >= deadline:
                 break
 
-            rest = max(0.01, min(10.0, deadline - current_time - 0.1)) if deadline is not None else 10.0
+            if deadline is not None:
+                remaining = deadline - current_time - _DEADLINE_BUFFER_SECONDS
+                rest = max(_MIN_SLEEP_SECONDS, min(_MAX_SLEEP_SECONDS, remaining))
+            else:
+                rest = _MAX_SLEEP_SECONDS
             await asyncio.sleep(rest)
 
         logger.debug(

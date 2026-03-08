@@ -303,8 +303,10 @@ class SQLiteBasedCollection(Collection[T], Generic[T]):
             try:
                 await self._conn.execute(sql, (*pk_values, data_json))
             except Exception as exc:
-                # aiosqlite wraps sqlite3.IntegrityError for UNIQUE violations.
-                if "UNIQUE" in str(exc) or "unique" in str(exc).lower():
+                # aiosqlite re-raises sqlite3.IntegrityError for UNIQUE violations.
+                import sqlite3
+
+                if isinstance(exc.__cause__, sqlite3.IntegrityError) or isinstance(exc, sqlite3.IntegrityError):
                     raise DuplicatedPrimaryKeyError(
                         f"Item already exists: {dict(zip(self._primary_keys, pk_values))}"
                     ) from exc
@@ -727,9 +729,17 @@ class SQLiteLightningCollections(LightningCollections):
         """
         if self._conn is not None:
             return
+        # isolation_level=None disables pysqlite's implicit transaction management
+        # so we can issue explicit BEGIN/COMMIT/ROLLBACK statements ourselves.
         self._conn = await aiosqlite.connect(self._db_path, isolation_level=None)
-        # Enable WAL mode for better concurrent read performance.
+        # WAL (Write-Ahead Logging) allows concurrent readers while a writer is
+        # active, which greatly reduces lock contention for our usage pattern
+        # (many reads, occasional writes).
         await self._conn.execute("PRAGMA journal_mode=WAL")
+        # NORMAL durability is a safe trade-off: data is written to disk before
+        # returning to the caller but without a full fsync on every transaction.
+        # This avoids data loss in most failure scenarios while remaining faster
+        # than the FULL setting.
         await self._conn.execute("PRAGMA synchronous=NORMAL")
         await self._conn.execute("PRAGMA foreign_keys=ON")
 
