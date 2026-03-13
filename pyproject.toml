@@ -323,7 +323,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["agentlightning"]
+packages = ["agentlightning", "mini_agentlightning"]
 include = [
   "agentlightning/**/*.yaml",
   "agentlightning/**/*.yml",
