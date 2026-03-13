@@ -24,10 +24,11 @@ import contextvars
 import logging
 import threading
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, List, Optional
+from typing import AsyncGenerator, List, Optional
 
 import opentelemetry.trace as otel_trace_api
-from opentelemetry.sdk.trace import ReadableSpan, SpanProcessor
+from opentelemetry.context import Context as OtelContext
+from opentelemetry.sdk.trace import ReadableSpan, Span as SdkSpan, SpanProcessor
 from opentelemetry.sdk.trace import TracerProvider as TracerProviderImpl
 
 from .store import InMemoryStore
@@ -72,7 +73,7 @@ class _BufferingSpanProcessor(SpanProcessor):
     # SpanProcessor contract
     # ------------------------------------------------------------------
 
-    def on_start(self, span: Any, parent_context: Any = None) -> None:  # noqa: ANN001
+    def on_start(self, span: SdkSpan, parent_context: Optional[OtelContext] = None) -> None:
         pass
 
     def on_end(self, span: ReadableSpan) -> None:

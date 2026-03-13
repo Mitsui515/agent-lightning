@@ -12,7 +12,7 @@ reinforcement-learning training loop:
 - No complex memory-eviction or span-eviction logic.
 - No retry/timeout configuration on rollouts.
 
-The result is a self-contained package of roughly 700 lines that is easy to
+The result is a self-contained package of roughly 1 500 lines that is easy to
 read, easy to modify, and fast to import.
 
 Quick-start example::

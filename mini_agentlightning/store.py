@@ -152,7 +152,7 @@ class InMemoryStore:
             self._attempts[rollout_id].append(attempt)
 
             rollout.status = "running"
-            rollout.resources = self._resources and dict(self._resources)
+            rollout.resources = dict(self._resources) if self._resources is not None else None
 
         logger.debug("Worker %s claimed rollout %s", worker_id, rollout_id)
         return AttemptedRollout(**rollout.model_dump(), attempt=attempt)

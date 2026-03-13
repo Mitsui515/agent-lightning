@@ -31,7 +31,7 @@ __all__ = [
 
 # ---------------------------------------------------------------------------
 # Span alias – we work directly with OpenTelemetry ReadableSpan objects so
-# that the full library's span serialisation/deserialization round-trip is
+# that the full library's span serialization/deserialization round-trip is
 # unnecessary.
 # ---------------------------------------------------------------------------
 
