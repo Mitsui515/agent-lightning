@@ -119,6 +119,7 @@ nav:
     - Bird's Eye View: deep-dive/birds-eye-view.md
     - Understanding Store: deep-dive/store.md
     - Serving LLM: deep-dive/serving-llm.md
+    - vs rLLM: deep-dive/rllm-comparison.md
   - API References:
     - Agent: reference/agent.md
     - Algorithm: reference/algorithm.md
